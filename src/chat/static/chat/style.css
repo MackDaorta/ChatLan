@@ -34,39 +34,43 @@ body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;
     align-self: flex-start;
     border-bottom-left-radius: 4px; 
 }
-.my-msg { color: blue; }
-/* El contenedor de la barra de escritura */
+.message.sent {
+    background-color: #0084ff; /* Azul Messenger */
+    color: white;
+    align-self: flex-end; /* Lo mueve a la derecha */
+    border-bottom-left-radius: 18px;
+    border-bottom-right-radius: 4px;
+}
+
 .chat-input-container {
-    display: flex; /* Alinea los elementos en fila */
-    gap: 10px;     /* Espacio entre el input y el botón */
+    display: flex; 
+    gap: 10px;     
     margin-top: 15px;
     padding: 10px;
     background-color: #ffffff;
-    border-radius: 25px; /* Hace que todo el bloque se vea redondeado */
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* Sombra suave para que "flote" */
+    border-radius: 25px; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
     border: 1px solid #ddd;
 }
 
-/* El campo de texto donde escribes */
 #chat-message-input {
-    flex-grow: 1; /* Ocupa todo el espacio disponible */
-    border: none; /* Quita el borde negro feo */
-    background-color: #f0f2f5; /* Gris muy clarito estilo Facebook */
+    flex-grow: 1; 
+    border: none; 
+    background-color: #f0f2f5; 
     padding: 12px 20px;
     border-radius: 20px;
     font-size: 15px;
-    outline: none; /* Quita el recuadro azul al hacer click */
+    outline: none; 
     transition: background-color 0.2s;
 }
 
-/* Efecto cuando haces click para escribir */
-#chat-message-input:focus {
-    background-color: #e4e6eb; /* Se oscurece un poquito */
-}
 
-/* El botón de Enviar */
+#chat-message-input:focus {
+    background-color: #e4e6eb; }
+
+
 #chat-message-submit {
-    background-color: #0084ff; /* Azul Messenger */
+    background-color: #0084ff; 
     color: white;
     border: none;
     padding: 10px 25px;
@@ -77,12 +81,12 @@ body { font-family: sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;
     transition: background-color 0.2s, transform 0.1s;
 }
 
-/* Efecto al pasar el mouse por el botón */
+
 #chat-message-submit:hover {
     background-color: #0073e6;
 }
 
-/* Efecto al hacer click en el botón */
+
 #chat-message-submit:active {
-    transform: scale(0.95); /* Se achica un poquito al presionar */
+    transform: scale(0.95); 
 }

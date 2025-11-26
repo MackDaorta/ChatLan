@@ -1,71 +1,55 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from .models import Message  # Importamos nuestro modelo
+from .models import Message
+from django.contrib.auth.models import User
 
 class ChatConsumer(AsyncWebsocketConsumer):
-    
     async def connect(self):
-        self.room_name = 'sala_general'
+
+        self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.room_group_name = 'chat_%s' % self.room_name
 
-        # 1. Unirse al grupo
-        await self.channel_layer.group_add(
-            self.room_group_name,
-            self.channel_name
-        )
-
+        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
-        # 2. CARGAR HISTORIAL (Solo para el usuario que entra)
-        # Obtenemos los últimos 20 mensajes de la BD
-        last_messages = await self.get_last_messages()
         
-        # Se los enviamos uno por uno
+        last_messages = await self.get_last_messages()
         for msg in last_messages:
-            await self.send(text_data=json.dumps({
-                'message': msg
-            }))
+            await self.send(text_data=json.dumps(msg))
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
+        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         message = text_data_json['message']
+        username = text_data_json['username'] 
 
-        # 3. GUARDAR EN BASE DE DATOS
-        await self.save_message(message)
+    
+        await self.save_message(username, message, self.room_name)
 
-        # 4. Enviar mensaje a todos (Broadcast)
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'chat_message',
-                'message': message
+                'message': message,
+                'username': username 
             }
         )
 
     async def chat_message(self, event):
-        message = event['message']
         await self.send(text_data=json.dumps({
-            'message': message
+            'message': event['message'],
+            'username': event['username']
         }))
 
-    # --- FUNCIONES AUXILIARES PARA LA BASE DE DATOS ---
-    
     @database_sync_to_async
-    def save_message(self, message_text):
-        # Crea el objeto Message en la tabla
-        return Message.objects.create(content=message_text)
+    def save_message(self, username, message, room):
+        user = User.objects.get(username=username)
+        return Message.objects.create(author=user, content=message, room_name=room)
 
     @database_sync_to_async
     def get_last_messages(self):
-        # Obtenemos los últimos 20. 
-        # Nota: 'order_by' negativo y luego reversa para obtener los ultimos correctamente
-        messages = Message.objects.order_by('-timestamp')[:20]
-        # Invertimos la lista para que salgan en orden cronológico (viejo -> nuevo)
-        return [msg.content for msg in reversed(messages)]
+        messages = Message.objects.filter(room_name=self.room_name).order_by('-timestamp')[:20]
+        return [{'message': msg.content, 'username': msg.author.username} for msg in reversed(messages)]
