@@ -14,6 +14,7 @@ def create_users():
         ('operador1', 'op1@empresa.com', '123', False),
         ('operador2', 'op2@empresa.com', '123', False),
         ('ventas', 'ventas@empresa.com', '123', False),
+        ('mack','','123',False)
     ]
 
     for username, email, password, is_superuser in users:

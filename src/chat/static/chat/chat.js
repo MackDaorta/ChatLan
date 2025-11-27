@@ -1,58 +1,59 @@
-
+// CONFIGURACIÓN DE CONEXIÓN
 const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
 const wsUrl = wsProtocol + window.location.host + '/ws/chat/' + roomName + '/';
 
-console.log("Conectando a:", wsUrl);
-
+console.log("Conectando a sala:", roomName);
 const chatSocket = new WebSocket(wsUrl);
 
-
+// AL RECIBIR MENSAJE (O HISTORIAL)
 chatSocket.onmessage = function(e) {
     const data = JSON.parse(e.data);
-    const chatLog = document.querySelector('#chat-log');
+    const container = document.getElementById('messages-container');
     
-    const messageDiv = document.createElement('div');
-    messageDiv.classList.add('message');
+    // Crear burbuja
+    const msgDiv = document.createElement('div');
     
+    // Decidir clase: ¿Enviado o Recibido?
+    const isMe = (data.username === currentUser);
+    msgDiv.className = isMe ? 'message sent' : 'message received';
     
-    if (data.username === currentUser) {
-        
-        messageDiv.classList.add('sent');
-        messageDiv.textContent = data.message;
-    } else {
-       
-        messageDiv.innerHTML = `<strong style="font-size:0.8em; display:block; margin-bottom:2px; color:#555;">${data.username}</strong> ${data.message}`;
-    }
-    // ---------------------------
+    // Contenido HTML
+    // Si es otro usuario, mostramos su nombre en pequeñito
+    const senderHtml = isMe ? '' : `<div class="sender-name">${data.username}</div>`;
     
-    chatLog.appendChild(messageDiv);
-    
-  
-    chatLog.scrollTop = chatLog.scrollHeight;
+    msgDiv.innerHTML = `
+        ${senderHtml}
+        <div class="message-content">
+            <p style="margin:0">${data.message}</p>
+        </div>
+        <span class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+    `;
+
+    container.appendChild(msgDiv);
+    container.scrollTop = container.scrollHeight; // Auto-scroll al final
 };
 
+// AL ENVIAR
+const sendBtn = document.getElementById('send-button');
+const input = document.getElementById('message-input');
 
-chatSocket.onclose = function(e) {
-    console.error('El socket se cerró inesperadamente');
-};
-
-
-document.querySelector('#chat-message-submit').onclick = function(e) {
-    const messageInputDom = document.querySelector('#chat-message-input');
-    const message = messageInputDom.value;
-    
-    if (message) {
+function sendMessage() {
+    const message = input.value.trim();
+    if(message) {
         chatSocket.send(JSON.stringify({
             'message': message,
-            'username': currentUser 
+            'username': currentUser
         }));
-        messageInputDom.value = '';
+        input.value = '';
     }
-};
+}
 
+sendBtn.onclick = sendMessage;
 
-document.querySelector('#chat-message-input').onkeyup = function(e) {
-    if (e.key === 'Enter') {
-        document.querySelector('#chat-message-submit').click();
-    }
+input.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') sendMessage();
+});
+
+chatSocket.onclose = function(e) {
+    console.error('Socket cerrado inesperadamente');
 };

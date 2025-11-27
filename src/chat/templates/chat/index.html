@@ -1,22 +1,128 @@
 {% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Chat LAN Redes 1</title>
-    <link rel="stylesheet" href="{% static 'chat/style.css' %}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Grupal - {{ room_name|capfirst }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'chat/style.css' %}"> 
+    <style>
+      /* Estilos críticos para que funcione el scroll y los colores */
+      .messages-container { height: calc(100vh - 140px); overflow-y: auto; padding: 20px; background: #f7f7f7; display: flex; flex-direction: column; gap: 10px; }
+      .message { max-width: 75%; display: flex; flex-direction: column; }
+      /* MENSAJES RECIBIDOS (Izquierda) */
+      .message.received { align-self: flex-start; }
+      .message.received .message-content { background: #fff; border-radius: 0 12px 12px 12px; }
+      /* MENSAJES ENVIADOS (Derecha) */
+      .message.sent { align-self: flex-end; align-items: flex-end; }
+      .message.sent .message-content { background: #d1f0d1; border-radius: 12px 0 12px 12px; }
+      
+      .message-content { padding: 10px 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-wrap: break-word; }
+      .message-time { font-size: 11px; color: #888; margin-top: 4px; margin-left: 2px; }
+      .sender-name { font-size: 12px; font-weight: bold; color: #555; margin-bottom: 2px; }
+    </style>
 </head>
 <body>
-    <h1>Proyecto Redes 1: Chat LAN</h1>
-    
-    <div id="chat-log"></div>
-    <div class="chat-input-container">
-        <input id="chat-message-input" type="text" size="50" placeholder="Escribe un mensaje...">
-        <input id="chat-message-submit" type="button" value="Enviar">
+
+    <div class="chat-app-container">
+        
+        <div class="sidebar">
+            <header class="sidebar-header">
+                <h2>Mis Grupos</h2>
+                <div class="header-actions">
+                    <button id="theme-toggle" class="theme-toggle-btn">🌙</button> 
+                </div>
+            </header>
+            
+            <div class="search-bar">
+                <input type="text" placeholder="Buscar...">
+            </div>
+
+            <ul class="chat-list">
+                <li class="chat-item {% if room_name == 'general' %}active{% endif %}" onclick="window.location.href='/general/'">
+                    <div class="chat-avatar">VG</div>
+                    <div class="chat-info"><span class="chat-name">General</span></div>
+                </li>
+                <li class="chat-item {% if room_name == 'ventas' %}active{% endif %}" onclick="window.location.href='/ventas/'">
+                    <div class="chat-avatar">VG</div>
+                    <div class="chat-info"><span class="chat-name">Ventas Globales</span></div>
+                </li>
+                
+                <li class="chat-item {% if room_name == 'marketing' %}active{% endif %}" onclick="window.location.href='/marketing/'">
+                    <div class="chat-avatar">MK</div>
+                    <div class="chat-info"><span class="chat-name">Marketing</span></div>
+                </li>
+
+                <li class="chat-item {% if room_name == 'soporte' %}active{% endif %}" onclick="window.location.href='/soporte/'">
+                    <div class="chat-avatar">ST</div>
+                    <div class="chat-info"><span class="chat-name">Soporte Técnico</span></div>
+                </li>
+            </ul>
+            
+            <div style="padding: 15px; border-top: 1px solid #ddd; display: flex; align-items: center; justify-content: space-between;">
+                <div style="font-weight: bold; color: #333;">{{ username }}</div>
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="auth-logout" style="background: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Salir</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="main-chat-area">
+            
+            <header class="chat-header">
+                <div class="header-info">
+                    <h3 id="current-group-title">{{ room_name|capfirst }}</h3>
+                    <p id="current-group-sub">Conectado como: {{ username }}</p>
+                </div>
+            </header>
+
+            <div class="messages-container" id="messages-container">
+                </div>
+            
+            <footer class="message-input-area">
+                <input type="text" id="message-input" placeholder="Escribe un mensaje..." class="text-input" autocomplete="off">
+                <button id="send-button" class="send-button">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 12H20M20 12L14 6M20 12L14 18" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </footer>
+            
+        </div>
+        
     </div>
     <script>
-        const currentUser="{{ username }}"
-        const roomName="{{ room_name }}"
+    // LÓGICA PARA EL MODO OSCURO
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const body = document.body;
+
+    // 1. Cargar preferencia guardada
+    if (localStorage.getItem('theme') === 'dark') {
+        body.classList.add('dark-mode');
+        themeToggleBtn.textContent = '☀️'; // Cambiar icono a sol
+    }
+
+    // 2. Al hacer clic en el botón
+    themeToggleBtn.addEventListener('click', () => {
+        body.classList.toggle('dark-mode');
+        
+        if (body.classList.contains('dark-mode')) {
+            localStorage.setItem('theme', 'dark');
+            themeToggleBtn.textContent = '☀️';
+        } else {
+            localStorage.setItem('theme', 'light');
+            themeToggleBtn.textContent = '🌙';
+        }
+    });
+</script>
+
+    <script>
+        const roomName = "{{ room_name }}";
+        const currentUser = "{{ username }}";
     </script>
     <script src="{% static 'chat/chat.js' %}"></script>
+
 </body>
 </html>
